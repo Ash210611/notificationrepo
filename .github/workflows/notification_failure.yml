@@ -8,7 +8,7 @@ on:
 
 jobs:
   send_email_on_failure:
-    runs-on: zilverton-private-x64-ubuntu
+    runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
 
     steps:
@@ -53,4 +53,4 @@ jobs:
           SMTP_PORT: "587"
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
-          EMAIL_TO: "kurtis.odom@cignahealthcare.com, abdul.rafay@cignahealthcare.com"
+          EMAIL_TO: "akashdeeptiwari44@gmail.com"
