@@ -16,5 +16,5 @@ jobs:
         with: 
           token: ${{secrets.GITHUB_TOKEN}}
 
-      - name: Run the failing command
+      - name: Run failing command
         run: exit 1  # This command will cause the workflow to fail
