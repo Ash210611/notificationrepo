@@ -3,12 +3,12 @@ name: Intentional Failure
 on:
   push:
     branches:
-      - feature_notification_failure_RE
+      - testbranch
 
 
 jobs:
   fail-job:
-    runs-on: zilverton-private-x64-ubuntu
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
