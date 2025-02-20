@@ -8,7 +8,7 @@ on:
 
 jobs:
   send_email_on_failure:
-    runs-on: zilverton-private-x64-ubuntu
+    runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
 
     steps:
