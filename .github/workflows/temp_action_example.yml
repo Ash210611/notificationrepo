@@ -1,0 +1,59 @@
+name: Notify on Workflow Failure
+
+on:
+  workflow_run:
+    workflows: ["Your Workflow Name"]
+    types:
+      - completed
+
+jobs:
+  notify:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Download the logs for the failed workflow run.
+      - name: Download workflow logs
+        run: |
+          echo "Downloading logs for run ${{ github.event.workflow_run.id }}"
+          curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -L \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/logs" \
+            -o logs.zip
+
+      # Step 2: Unzip the logs.
+      - name: Unzip logs
+        run: unzip logs.zip -d logs
+
+      # Step 3: Aggregate only the failure details from the logs.
+      # This step searches for lines starting with "FAILURE" in any file under the logs directory.
+      - name: Extract failure details from logs
+        id: extract_failure
+        run: |
+          echo "Searching for lines starting with 'FAILURE'..."
+          # grep recursively for lines that start with "FAILURE"
+          FAILURE_LINES=$(grep -R "^FAILURE" logs || true)
+          if [ -z "$FAILURE_LINES" ]; then
+            FAILURE_LINES="No failure details found."
+          fi
+          # Escape newlines for safe inclusion in the email body.
+          ESCAPED_FAILURE=$(echo "$FAILURE_LINES" | sed ':a;N;$!ba;s/\n/\\n/g')
+          echo "::set-output name=failure_output::$ESCAPED_FAILURE"
+
+      # Step 4: Send the email notification including the extracted failure details.
+      - name: Send Email Notification
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.example.com         # Replace with your SMTP server address.
+          server_port: 587                           # Replace with your SMTP server port if needed.
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: "Workflow '${{ github.event.workflow_run.name }}' FAILED"
+          body: |
+            The workflow run has failed.
+
+            Failure Details:
+            ${{ steps.extract_failure.outputs.failure_output }}
+
+            For more details, please visit: ${{ github.event.workflow_run.html_url }}
+          to: recipient@example.com                   # Replace with the recipient's email.
+          from: GitHub Actions <actions@example.com>   # Replace with the desired sender address.

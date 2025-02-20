@@ -1,0 +1,20 @@
+name: Intentional Failure
+
+on:
+  push:
+    branches:
+      - feature_notification_failure_RE
+
+
+jobs:
+  fail-job:
+    runs-on: zilverton-private-x64-ubuntu
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with: 
+          token: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Run failing command
+        run: exit 1  # This command will cause the workflow to fail

@@ -1,0 +1,56 @@
+name: Notify on Workflow Failure
+
+on:
+  workflow_run:
+    workflows: ["Intentional Failure"]  # Ensure this matches the failing workflow
+    types:
+      - completed
+
+jobs:
+  send_email_on_failure:
+    runs-on: zilverton-private-x64-ubuntu
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set Up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
+
+      - name: Install Dependencies
+        run: pip install requests jq
+
+      - name: Get Workflow ID for Intentional Failure
+        id: get_workflow_id
+        run: |
+          echo "Fetching Workflow ID..."
+          WORKFLOW_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows" | jq -r '.workflows[] | select(.name=="Intentional Failure") | .id')
+
+          echo "WORKFLOW_ID=$WORKFLOW_ID" >> $GITHUB_ENV
+          echo "✅ Retrieved Workflow ID: $WORKFLOW_ID"
+
+      - name: Get Latest Failed Run ID
+        id: get_failed_run_id
+        run: |
+          echo "Fetching latest failed run ID..."
+          FAILED_RUN_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/$WORKFLOW_ID/runs?status=failure&per_page=1" | jq -r '.workflow_runs[0].id')
+
+          echo "LATEST_FAILED_RUN_ID=$FAILED_RUN_ID" >> $GITHUB_ENV
+          echo "🔴 Latest Failed Run ID: $FAILED_RUN_ID"
+
+      - name: Run Failure Email Script
+        run: python .github/workflows/send_email_on_failure.py
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{env.LATEST_FAILED_RUN_ID}} # Corrected variable reference
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SMTP_SERVER: "smtp.office365.com"
+          SMTP_PORT: "587"
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_TO: "kurtis.odom@cignahealthcare.com, abdul.rafay@cignahealthcare.com"
