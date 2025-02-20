@@ -5,6 +5,8 @@ on:
     workflows: ["Intentional Failure"]  # Ensure this matches the failing workflow
     types:
       - completed
+    branches:
+      - testbranch
 
 jobs:
   send_email_on_failure:
